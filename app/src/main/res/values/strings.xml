@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Hangman</string>
+    <string name="enter_full_phrase">Enter Full Phrase</string>
+    <string name="check">Check</string>
+</resources>
