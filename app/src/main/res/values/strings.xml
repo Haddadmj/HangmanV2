@@ -2,4 +2,5 @@
     <string name="app_name">Hangman</string>
     <string name="enter_full_phrase">Enter Full Phrase</string>
     <string name="check">Check</string>
+    <string name="preference_file_key">com.mohammad.hangman.PREFERENCE_FILE_KEY</string>
 </resources>

@@ -1,6 +1,7 @@
 package com.mohammad.hangman
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.hardware.input.InputManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -15,22 +16,32 @@ import androidx.recyclerview.widget.RecyclerView
 
 class MainActivity : AppCompatActivity() {
 
-    lateinit var tvPhrase: TextView
-    lateinit var tvGuess: TextView
-    lateinit var mainRV: RecyclerView
-    lateinit var rvAdapter: RVAdapter
-    lateinit var messages: ArrayList<String>
-    lateinit var etGuess: EditText
-    lateinit var checkBtn: Button
+    private lateinit var tvPhrase: TextView
+    private lateinit var tvGuess: TextView
+    private lateinit var tvScore: TextView
+    private lateinit var mainRV: RecyclerView
+    private lateinit var rvAdapter: RVAdapter
+    private lateinit var messages: ArrayList<String>
+    private lateinit var etGuess: EditText
+    private lateinit var checkBtn: Button
+    private lateinit var sharedPreferences: SharedPreferences
 
     private var phrase = "Something is here"
     private var secret = CharArray(phrase.length)
     private var letters = ArrayList<String>()
     private var numOfGuess = 10
+    private var score = 0
+    private var highScore = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        sharedPreferences =
+            this.getSharedPreferences(getString(R.string.preference_file_key), Context.MODE_PRIVATE)
+
+        highScore = sharedPreferences.getInt("highscore",0)
+
         initVars()
         updateText()
 
@@ -43,13 +54,30 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+    override fun recreate() {
+        super.recreate()
+
+        phrase = "Something is here"
+        secret = CharArray(phrase.length)
+        letters = ArrayList()
+        numOfGuess = 10
+        score = 0
+        highScore = 0
+        phrase.forEachIndexed { index, c ->
+            if (c == ' ')
+                secret[index] = ' '
+            else secret[index] = '*'
+        }
+
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putCharArray("secret",secret)
-        outState.putStringArrayList("letters",letters)
-        outState.putString("sep",tvPhrase.text.toString())
+        outState.putCharArray("secret", secret)
+        outState.putStringArrayList("letters", letters)
+        outState.putString("sep", tvPhrase.text.toString())
         outState.putInt("guesses", numOfGuess)
-        outState.putStringArrayList("messages",messages)
+        outState.putStringArrayList("messages", messages)
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
@@ -67,9 +95,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateText() {
         tvPhrase.text = "Phrase: ${String(secret)}"
+        tvScore.text = "HighScore: $highScore"
     }
 
-    fun updateGuesses(){
+    fun updateGuesses() {
         tvGuess.text = "Guessed Letter: $letters"
     }
 
@@ -98,10 +127,19 @@ class MainActivity : AppCompatActivity() {
 
         if (found != 0) {
             rvAdapter.add("Found $found $letter(s)")
+            score++
         } else {
             rvAdapter.add("No $letter Left in Phrase")
             rvAdapter.add("Number of guesses ${--numOfGuess}")
         }
+
+        save()
+
+        if (!secret.contains('*')){
+            disable()
+            alertDialog(true)
+        }
+
         if (numOfGuess == 0) {
             disable()
             alertDialog(false)
@@ -110,6 +148,15 @@ class MainActivity : AppCompatActivity() {
         clear()
         etGuess.hint = "Enter Full Phrase"
         mainRV.scrollToPosition(messages.size - 1)
+    }
+
+    private fun save(){
+        if(score > highScore){
+            with(sharedPreferences.edit()){
+                putInt("highscore",score)
+                apply()
+            }
+        }
     }
 
     private fun checkPhrase() {
@@ -163,6 +210,7 @@ class MainActivity : AppCompatActivity() {
     private fun initVars() {
         tvPhrase = findViewById(R.id.tvPhrase)
         tvGuess = findViewById(R.id.tvGuess)
+        tvScore = findViewById(R.id.tvScore)
         mainRV = findViewById(R.id.rvMain)
         messages = arrayListOf()
         rvAdapter = RVAdapter(messages)
